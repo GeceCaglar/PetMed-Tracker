@@ -1151,129 +1151,6 @@ export default function App() {
   }
 
   /* =====================================================
-     HİZMETLER ANA SAYFA
-  ===================================================== */
-
-  if (activeTab === 'services') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.mainHeader}>
-          <View>
-            <Text style={styles.logo}>PetMed</Text>
-            <Text style={styles.pageTitle}>Hizmetler</Text>
-          </View>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.serviceIntro}>
-            Evcil hayvanın için ihtiyacın olan her şey
-            tek yerde.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.featuredService}
-            onPress={() => setServiceScreen('tracker')}
-          >
-            <View style={styles.featuredIcon}>
-              <Text style={styles.featuredIconText}>⌖</Text>
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.featuredTag}>
-                PETMED TRACKER
-              </Text>
-
-              <Text style={styles.featuredTitle}>
-                Köpek gezdirici bul
-              </Text>
-
-              <Text style={styles.featuredText}>
-                Yakınındaki doğrulanmış gezdiricileri keşfet,
-                rezervasyon yap ve yürüyüşü takip et.
-              </Text>
-            </View>
-
-            <Text style={styles.serviceArrow}>›</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.sectionTitle}>
-            Tüm hizmetler
-          </Text>
-
-          <View style={styles.serviceGrid}>
-            {SERVICES.map((service) => (
-              <TouchableOpacity
-                key={service.id}
-                style={styles.serviceCard}
-                onPress={() => {
-                  if (service.id === 'tracker') {
-                    setServiceScreen('tracker');
-                  } else if (service.id === 'askVet') {
-                    setServiceScreen('askVet');
-                  } else if (service.id === 'findVet') {
-                    setServiceScreen('findVet');
-                  } else if (
-                    service.id === 'hotel' ||
-                    service.id === 'sitter' ||
-                    service.id === 'trainer'
-                  ) {
-                    setServiceScreen(service.id);
-                  } else if (
-                    service.id === 'health' ||
-                    service.id === 'reminders' ||
-                    service.id === 'lost' ||
-                    service.id === 'places'
-                  ) {
-                    setServiceScreen(service.id);
-                  } else {
-                    Alert.alert(
-                      service.title,
-                      `${service.title} bölümünü sıradaki geliştirmelerde aktif edeceğiz.`
-                    );
-                  }
-                }}
-              >
-                <View style={styles.serviceIcon}>
-                  <Text style={styles.serviceIconText}>
-                    {service.icon}
-                  </Text>
-                </View>
-
-                <Text style={styles.serviceTitle}>
-                  {service.title}
-                </Text>
-
-                <Text style={styles.serviceSubtitle}>
-                  {service.subtitle}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.safetyBox}>
-            <Text style={styles.safetyTitle}>
-              PetMed Güven
-            </Text>
-
-            <Text style={styles.safetyText}>
-              Hizmet sağlayıcı profillerinde doğrulama,
-              değerlendirme ve kullanıcı yorumları sistemi
-              oluşturulacaktır.
-            </Text>
-          </View>
-
-          <View style={{ height: 100 }} />
-        </ScrollView>
-
-        <BottomBar />
-      </SafeAreaView>
-    );
-  }
-
-  /* =====================================================
      SAĞLIK KARNESİ
   ===================================================== */
   if (activeTab === 'services' && serviceScreen === 'health') {
@@ -1809,6 +1686,130 @@ export default function App() {
       </SafeAreaView>
     );
   }
+
+  /* =====================================================
+     HİZMETLER ANA SAYFA
+  ===================================================== */
+
+  if (activeTab === 'services') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.mainHeader}>
+          <View>
+            <Text style={styles.logo}>PetMed</Text>
+            <Text style={styles.pageTitle}>Hizmetler</Text>
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.serviceIntro}>
+            Evcil hayvanın için ihtiyacın olan her şey
+            tek yerde.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.featuredService}
+            onPress={() => setServiceScreen('tracker')}
+          >
+            <View style={styles.featuredIcon}>
+              <Text style={styles.featuredIconText}>⌖</Text>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.featuredTag}>
+                PETMED TRACKER
+              </Text>
+
+              <Text style={styles.featuredTitle}>
+                Köpek gezdirici bul
+              </Text>
+
+              <Text style={styles.featuredText}>
+                Yakınındaki doğrulanmış gezdiricileri keşfet,
+                rezervasyon yap ve yürüyüşü takip et.
+              </Text>
+            </View>
+
+            <Text style={styles.serviceArrow}>›</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.sectionTitle}>
+            Tüm hizmetler
+          </Text>
+
+          <View style={styles.serviceGrid}>
+            {SERVICES.map((service) => (
+              <TouchableOpacity
+                key={service.id}
+                style={styles.serviceCard}
+                onPress={() => {
+                  if (service.id === 'tracker') {
+                    setServiceScreen('tracker');
+                  } else if (service.id === 'askVet') {
+                    setServiceScreen('askVet');
+                  } else if (service.id === 'findVet') {
+                    setServiceScreen('findVet');
+                  } else if (
+                    service.id === 'hotel' ||
+                    service.id === 'sitter' ||
+                    service.id === 'trainer'
+                  ) {
+                    setServiceScreen(service.id);
+                  } else if (
+                    service.id === 'health' ||
+                    service.id === 'reminders' ||
+                    service.id === 'lost' ||
+                    service.id === 'places'
+                  ) {
+                    setServiceScreen(service.id);
+                  } else {
+                    Alert.alert(
+                      service.title,
+                      `${service.title} bölümünü sıradaki geliştirmelerde aktif edeceğiz.`
+                    );
+                  }
+                }}
+              >
+                <View style={styles.serviceIcon}>
+                  <Text style={styles.serviceIconText}>
+                    {service.icon}
+                  </Text>
+                </View>
+
+                <Text style={styles.serviceTitle}>
+                  {service.title}
+                </Text>
+
+                <Text style={styles.serviceSubtitle}>
+                  {service.subtitle}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.safetyBox}>
+            <Text style={styles.safetyTitle}>
+              PetMed Güven
+            </Text>
+
+            <Text style={styles.safetyText}>
+              Hizmet sağlayıcı profillerinde doğrulama,
+              değerlendirme ve kullanıcı yorumları sistemi
+              oluşturulacaktır.
+            </Text>
+          </View>
+
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        <BottomBar />
+      </SafeAreaView>
+    );
+  }
+
 
   /* =====================================================
      KEŞFET
