@@ -10,8 +10,7 @@
       "web"
     ],
     "web": {
-      "bundler": "metro",
-      "output": "static"
+      "bundler": "metro"
     },
     "experiments": {
       "baseUrl": "/PetMed-Tracker"
