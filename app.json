@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "PetMed Tracker",
+    "slug": "petmed-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "experiments": {
+      "baseUrl": "/PetMed-Tracker"
+    }
+  }
+}
