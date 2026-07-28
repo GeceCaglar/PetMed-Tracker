@@ -92,6 +92,12 @@ const VETS = [
     specialties: ['Dermatoloji', 'Kedi', 'Köpek'],
     experience: '9 yıl',
     answers: 128,
+    rating: '4.9',
+    reviews: 186,
+    fee: 900,
+    about: 'Kedi ve köpeklerde dermatoloji, koruyucu hekimlik ve genel muayene alanlarında çalışıyor.',
+    hours: 'Pzt–Cmt • 09:00–19:00',
+    comments: ['Çok ilgili ve açıklayıcıydı.', 'Kedimizle çok sakin ilgilendi.', 'Tedavi sürecini detaylı anlattı.'],
     image:
       'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500',
   },
@@ -103,6 +109,12 @@ const VETS = [
     specialties: ['İç Hastalıkları', 'Kedi', 'Köpek'],
     experience: '12 yıl',
     answers: 214,
+    rating: '4.8',
+    reviews: 241,
+    fee: 1000,
+    about: 'İç hastalıkları, rutin kontroller ve kedi-köpek sağlığı alanlarında deneyimli veteriner hekim.',
+    hours: 'Pzt–Paz • 10:00–20:00',
+    comments: ['Teşhis sürecini anlaşılır anlattı.', 'Kliniği temiz ve düzenliydi.', 'Kontrol sonrası da ilgilendi.'],
     image:
       'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500',
   },
@@ -310,7 +322,7 @@ const SERVICES = [
   {
     id: 'lost',
     icon: '!',
-    title: 'Kayıp Hayvan',
+    title: 'Kayıp Evcil Dostum',
     subtitle: 'Çevrendeki kullanıcılara hızlı ilan',
   },
   {
@@ -342,6 +354,9 @@ export default function App() {
   const [petBreed, setPetBreed] = useState('');
   const [petAge, setPetAge] = useState('');
   const [petWeight, setPetWeight] = useState('');
+
+  const [selectedVet, setSelectedVet] = useState(null);
+  const [vetModal, setVetModal] = useState(false);
 
   const [selectedWalker, setSelectedWalker] = useState(null);
   const [walkerModal, setWalkerModal] = useState(false);
@@ -380,6 +395,18 @@ export default function App() {
     { id: 'r1', title: 'İlaç zamanı', detail: '21:00 • Akşam dozu', done: false },
     { id: 'r2', title: 'İç parazit', detail: '12 gün kaldı', done: false },
   ]);
+  const [healthModal, setHealthModal] = useState(false);
+  const [healthTitle, setHealthTitle] = useState('');
+  const [healthType, setHealthType] = useState('Aşı');
+  const [healthDate, setHealthDate] = useState('');
+  const [healthNoteText, setHealthNoteText] = useState('');
+
+  const [reminderModal, setReminderModal] = useState(false);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
+  const [reminderNote, setReminderNote] = useState('');
+
   const [lostActive, setLostActive] = useState(false);
 
   useEffect(() => {
@@ -841,12 +868,10 @@ export default function App() {
 
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() =>
-                  Alert.alert(
-                    vet.name,
-                    `${vet.clinic}\n${vet.city}\n\n${vet.answers} PetMed yanıtı\n${vet.experience} deneyim`
-                  )
-                }
+                onPress={() => {
+                  setSelectedVet(vet);
+                  setVetModal(true);
+                }}
               >
                 <Text style={styles.primaryButtonText}>
                   Profili Gör
@@ -866,6 +891,15 @@ export default function App() {
         </ScrollView>
 
         <BottomBar />
+        <VetProfileModal
+          visible={vetModal}
+          vet={selectedVet}
+          close={() => setVetModal(false)}
+          message={() => {
+            setVetModal(false);
+            openChat(selectedVet);
+          }}
+        />
         <ProModal visible={proModal} close={() => setProModal(false)} activate={activateProDemo} />
         <ChatModal visible={chatModal} close={() => setChatModal(false)} person={chatUser} messages={messages} text={messageText} setText={setMessageText} send={sendMessage} />
       </SafeAreaView>
@@ -1244,11 +1278,31 @@ export default function App() {
   ===================================================== */
   if (activeTab === 'services' && serviceScreen === 'health') {
     const pet = pets[0];
-    const medical = [
-      { id: 'm1', icon: '💉', title: 'Karma Aşı', detail: 'Son: 12.08.2025', next: '12.08.2026', status: '12 gün kaldı' },
-      { id: 'm2', icon: '🪱', title: 'İç Parazit', detail: 'Son: 15.06.2026', next: '15.09.2026', status: '48 gün kaldı' },
-      { id: 'm3', icon: '🩺', title: 'Genel Kontrol', detail: '25.03.2026 • Dr. Ayşe Yılmaz', next: '25.09.2026', status: 'Planlandı' },
-    ];
+
+    const saveHealthItem = () => {
+      if (!healthTitle.trim()) {
+        Alert.alert('Eksik bilgi', 'Sağlık kaydının başlığını yaz.');
+        return;
+      }
+      const item = {
+        id: Date.now().toString(),
+        type: healthType,
+        title: healthTitle.trim(),
+        date: healthDate.trim() || new Date().toLocaleDateString('tr-TR'),
+        status: 'Kaydedildi',
+        note: healthNoteText.trim(),
+      };
+      setHealthItems([item, ...healthItems]);
+      setHealthTitle('');
+      setHealthDate('');
+      setHealthNoteText('');
+      setHealthType('Aşı');
+      setHealthModal(false);
+    };
+
+    const removeHealthItem = (id) => {
+      setHealthItems(healthItems.filter((x) => x.id !== id));
+    };
 
     return (
       <SafeAreaView style={styles.container}>
@@ -1258,99 +1312,92 @@ export default function App() {
           </TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.pageTitle}>Dijital Sağlık Karnesi</Text>
-            <Text style={styles.smallGray}>Tüm sağlık geçmişi tek yerde</Text>
+            <Text style={styles.smallGray}>Aşı, ilaç, kontrol, alerji ve sağlık geçmişi</Text>
           </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.healthProfileCard}>
-            <View style={styles.healthAvatar}>
-              <Text style={{ fontSize: 30 }}>🐾</Text>
-            </View>
+            <View style={styles.healthAvatar}><Text style={{ fontSize: 30 }}>🐾</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.healthPetName}>{pet?.name || 'Evcil Hayvanım'}</Text>
               <Text style={styles.smallGray}>
                 {pet ? `${pet.type || 'Evcil hayvan'} • ${pet.breed || 'Irk belirtilmedi'} • ${pet.age || '-'} yaş` : 'Profil bilgilerini Hayvanlarım bölümünden ekle'}
               </Text>
             </View>
-            <View style={styles.healthStatusGood}>
-              <Text style={styles.healthStatusGoodText}>İyi</Text>
-            </View>
           </View>
 
           <View style={styles.healthStatsRow}>
             <View style={styles.healthStat}>
-              <Text style={styles.healthStatNumber}>3</Text>
+              <Text style={styles.healthStatNumber}>{healthItems.filter(x => x.type === 'Aşı').length}</Text>
               <Text style={styles.healthStatLabel}>Aşı</Text>
             </View>
             <View style={styles.healthStat}>
-              <Text style={styles.healthStatNumber}>0</Text>
+              <Text style={styles.healthStatNumber}>{healthItems.filter(x => x.type === 'Alerji').length}</Text>
               <Text style={styles.healthStatLabel}>Alerji</Text>
             </View>
             <View style={styles.healthStat}>
-              <Text style={styles.healthStatNumber}>1</Text>
+              <Text style={styles.healthStatNumber}>{healthItems.filter(x => x.type === 'İlaç').length}</Text>
               <Text style={styles.healthStatLabel}>İlaç</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Yaklaşan sağlık işlemleri</Text>
-          {medical.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.medicalCard}
-              onPress={() => Alert.alert(item.title, `${item.detail}\nSonraki tarih: ${item.next}\n${item.status}`)}
-            >
-              <View style={styles.medicalIcon}><Text style={{ fontSize: 22 }}>{item.icon}</Text></View>
+          <Text style={styles.sectionTitle}>Sağlık geçmişi</Text>
+          {healthItems.map((item) => (
+            <View key={item.id} style={styles.medicalCard}>
+              <View style={styles.medicalIcon}>
+                <Text style={{ fontSize: 22 }}>{item.type === 'Aşı' ? '💉' : item.type === 'İlaç' ? '💊' : item.type === 'Alerji' ? '!' : '🩺'}</Text>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoCardTitle}>{item.title}</Text>
-                <Text style={styles.smallGray}>{item.detail}</Text>
-                <Text style={styles.medicalNext}>Sonraki: {item.next}</Text>
+                <Text style={styles.smallGray}>{item.type} • {item.date}</Text>
+                {!!item.note && <Text style={styles.healthNote}>{item.note}</Text>}
               </View>
-              <Text style={styles.medicalStatus}>{item.status}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeHealthItem(item.id)} style={styles.smallDeleteButton}>
+                <Text style={styles.smallDeleteText}>Sil</Text>
+              </TouchableOpacity>
+            </View>
           ))}
 
-          <Text style={styles.sectionTitle}>Aktif ilaç</Text>
-          <View style={styles.medicineCard}>
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoCardTitle}>Örnek ilaç kaydı</Text>
-                <Text style={styles.smallGray}>Günde 2 kez • 09:00 / 21:00</Text>
-              </View>
-              <Text style={styles.medicineActive}>AKTİF</Text>
+          {healthItems.length === 0 && (
+            <View style={styles.emptyInfoBox}>
+              <Text style={styles.infoCardTitle}>Henüz sağlık kaydı yok</Text>
+              <Text style={styles.smallGray}>İlk aşı, ilaç veya kontrol kaydını ekleyebilirsin.</Text>
             </View>
-            <Text style={styles.healthNote}>
-              İlaç bilgileri veteriner hekimin önerdiği şekilde kaydedilmelidir.
-            </Text>
-          </View>
+          )}
 
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => {
-              const next = {
-                id: Date.now().toString(),
-                type: 'Sağlık',
-                title: 'Yeni sağlık kaydı',
-                date: new Date().toLocaleDateString('tr-TR'),
-                status: 'Kaydedildi',
-              };
-              setHealthItems([next, ...healthItems]);
-              Alert.alert('Kaydedildi', 'Demo sağlık kaydı sağlık karnesine eklendi.');
-            }}
-          >
+          <TouchableOpacity style={styles.primaryButton} onPress={() => setHealthModal(true)}>
             <Text style={styles.primaryButtonText}>+ Sağlık Kaydı Ekle</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.outlineButton}
-            onPress={() => Alert.alert('Veterinerle paylaş', 'Sağlık özeti veterinerle paylaşılmaya hazır. Gerçek sürümde PDF ve klinik paylaşımı bağlanacak.')}
-          >
-            <Text style={styles.outlineButtonText}>Sağlık Karnesini Veterinerle Paylaş</Text>
           </TouchableOpacity>
 
           <View style={{ height: 100 }} />
         </ScrollView>
         <BottomBar />
+
+        <Modal visible={healthModal} transparent animationType="slide" onRequestClose={() => setHealthModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.formModalCard}>
+              <Text style={styles.modalTitle}>Sağlık Kaydı Ekle</Text>
+              <Text style={styles.formLabel}>Kayıt türü</Text>
+              <View style={styles.chips}>
+                {['Aşı', 'İlaç', 'Kontrol', 'Alerji', 'Operasyon', 'Kilo'].map((x) => (
+                  <TouchableOpacity key={x} style={[styles.chip, healthType === x && styles.activeFormChip]} onPress={() => setHealthType(x)}>
+                    <Text style={[styles.chipText, healthType === x && styles.activeFormChipText]}>{x}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput style={styles.input} placeholder="Başlık (örn. Karma aşı)" value={healthTitle} onChangeText={setHealthTitle} />
+              <TextInput style={styles.input} placeholder="Tarih (örn. 12.08.2026)" value={healthDate} onChangeText={setHealthDate} />
+              <TextInput style={[styles.input, { minHeight: 80 }]} multiline placeholder="Not / doz / veteriner bilgisi" value={healthNoteText} onChangeText={setHealthNoteText} />
+              <TouchableOpacity style={styles.primaryButton} onPress={saveHealthItem}>
+                <Text style={styles.primaryButtonText}>Kaydet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.outlineButton} onPress={() => setHealthModal(false)}>
+                <Text style={styles.outlineButtonText}>Vazgeç</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -1359,17 +1406,27 @@ export default function App() {
      HATIRLATICILAR
   ===================================================== */
   if (activeTab === 'services' && serviceScreen === 'reminders') {
-    const addReminder = () => {
-      setReminders([
-        ...reminders,
-        {
-          id: Date.now().toString(),
-          title: 'Yeni bakım hatırlatıcısı',
-          detail: 'Yarın • 09:00',
-          done: false,
-        },
-      ]);
-      Alert.alert('Hatırlatıcı eklendi', 'Yeni demo hatırlatıcın oluşturuldu.');
+    const saveReminder = async () => {
+      if (!reminderTitle.trim()) {
+        Alert.alert('Eksik bilgi', 'Hatırlatıcı başlığını yaz.');
+        return;
+      }
+      const detail = `${reminderDate.trim() || 'Bugün'}${reminderTime.trim() ? ` • ${reminderTime.trim()}` : ''}${reminderNote.trim() ? ` • ${reminderNote.trim()}` : ''}`;
+      setReminders([...reminders, { id: Date.now().toString(), title: reminderTitle.trim(), detail, done: false }]);
+      setReminderTitle('');
+      setReminderDate('');
+      setReminderTime('');
+      setReminderNote('');
+      setReminderModal(false);
+
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            new Notification('PetMed hatırlatıcısı oluşturuldu', { body: `${reminderTitle.trim()} • ${detail}` });
+          }
+        } catch (e) {}
+      }
     };
 
     return (
@@ -1386,63 +1443,62 @@ export default function App() {
 
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.reminderHero}>
-            <Text style={styles.reminderHeroTitle}>Bugün</Text>
-            <Text style={styles.reminderHeroBig}>
-              {reminders.filter((r) => !r.done).length} görev kaldı
-            </Text>
-            <Text style={styles.reminderHeroSub}>
-              Tamamladığın işlemlere dokunarak işaretleyebilirsin.
-            </Text>
+            <Text style={styles.reminderHeroTitle}>Planım</Text>
+            <Text style={styles.reminderHeroBig}>{reminders.filter((r) => !r.done).length} aktif hatırlatıcı</Text>
+            <Text style={styles.reminderHeroSub}>Tamamlamak için karta dokun. Silmek için sağdaki Sil butonunu kullan.</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Günün planı</Text>
+          <Text style={styles.sectionTitle}>Hatırlatıcılarım</Text>
           {reminders.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.reminderCard, item.done && styles.reminderDone]}
-              onPress={() =>
-                setReminders(
-                  reminders.map((r) =>
-                    r.id === item.id ? { ...r, done: !r.done } : r
-                  )
-                )
-              }
-            >
-              <View style={styles.reminderCheck}>
-                <Text style={styles.reminderCheckText}>{item.done ? '✓' : '○'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoCardTitle}>{item.title}</Text>
-                <Text style={styles.smallGray}>{item.detail}</Text>
-              </View>
-              <Text style={styles.reminderArrow}>›</Text>
-            </TouchableOpacity>
+            <View key={item.id} style={[styles.reminderCard, item.done && styles.reminderDone]}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                onPress={() => setReminders(reminders.map((r) => r.id === item.id ? { ...r, done: !r.done } : r))}
+              >
+                <View style={styles.reminderCheck}>
+                  <Text style={styles.reminderCheckText}>{item.done ? '✓' : '○'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoCardTitle}>{item.title}</Text>
+                  <Text style={styles.smallGray}>{item.detail}</Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setReminders(reminders.filter((r) => r.id !== item.id))} style={styles.smallDeleteButton}>
+                <Text style={styles.smallDeleteText}>Sil</Text>
+              </TouchableOpacity>
+            </View>
           ))}
 
-          <Text style={styles.sectionTitle}>Yaklaşan</Text>
-          <View style={styles.upcomingCard}>
-            <Text style={styles.upcomingDate}>12 AĞU</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.infoCardTitle}>Karma aşı zamanı</Text>
-              <Text style={styles.smallGray}>12 gün kaldı • Veteriner randevusu oluştur</Text>
-            </View>
+          <View style={styles.notificationInfo}>
+            <Text style={styles.infoCardTitle}>Bildirimler</Text>
+            <Text style={styles.smallGray}>Web sürümünde tarayıcı izni verilirse bildirim izni istenir. iOS/Android mağaza sürümünde zamanlanmış telefon bildirimleri için Expo Notifications bağlantısı ayrıca yapılacaktır.</Text>
           </View>
 
-          <View style={styles.upcomingCard}>
-            <Text style={styles.upcomingDate}>15 EYL</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.infoCardTitle}>İç parazit uygulaması</Text>
-              <Text style={styles.smallGray}>48 gün kaldı</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.primaryButton} onPress={addReminder}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => setReminderModal(true)}>
             <Text style={styles.primaryButtonText}>+ Hatırlatıcı Ekle</Text>
           </TouchableOpacity>
 
           <View style={{ height: 100 }} />
         </ScrollView>
         <BottomBar />
+
+        <Modal visible={reminderModal} transparent animationType="slide" onRequestClose={() => setReminderModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.formModalCard}>
+              <Text style={styles.modalTitle}>Hatırlatıcı Ekle</Text>
+              <TextInput style={styles.input} placeholder="Başlık (örn. Akşam ilacı)" value={reminderTitle} onChangeText={setReminderTitle} />
+              <TextInput style={styles.input} placeholder="Tarih (örn. 30.07.2026)" value={reminderDate} onChangeText={setReminderDate} />
+              <TextInput style={styles.input} placeholder="Saat (örn. 21:00)" value={reminderTime} onChangeText={setReminderTime} />
+              <TextInput style={styles.input} placeholder="Not (opsiyonel)" value={reminderNote} onChangeText={setReminderNote} />
+              <TouchableOpacity style={styles.primaryButton} onPress={saveReminder}>
+                <Text style={styles.primaryButtonText}>Kaydet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.outlineButton} onPress={() => setReminderModal(false)}>
+                <Text style={styles.outlineButtonText}>Vazgeç</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -1458,7 +1514,7 @@ export default function App() {
             <Text style={styles.back}>‹</Text>
           </TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.pageTitle}>Kayıp Hayvan</Text>
+            <Text style={styles.pageTitle}>Kayıp Evcil Dostum</Text>
             <Text style={styles.smallGray}>PetMed Kayıp Ağı</Text>
           </View>
         </View>
@@ -1887,6 +1943,64 @@ export default function App() {
 /* =========================================================
    PETMED PRO + MESAJLAŞMA
 ========================================================= */
+
+function VetProfileModal({ visible, vet, close, message }) {
+  if (!vet) return null;
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.formModalCard}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.row}>
+              <Image source={{ uri: vet.image }} style={styles.walkerImage} />
+              <View style={{ flex: 1, marginLeft: 13 }}>
+                <Text style={styles.modalTitle}>{vet.name} ✓</Text>
+                <Text style={styles.purpleText}>Doğrulanmış Veteriner Hekim</Text>
+                <Text style={styles.smallGray}>{vet.clinic}</Text>
+                <Text style={styles.smallGray}>{vet.city}</Text>
+              </View>
+            </View>
+
+            <View style={styles.vetProfileStats}>
+              <View style={styles.healthStat}><Text style={styles.healthStatNumber}>★ {vet.rating}</Text><Text style={styles.healthStatLabel}>{vet.reviews} yorum</Text></View>
+              <View style={styles.healthStat}><Text style={styles.healthStatNumber}>{vet.experience}</Text><Text style={styles.healthStatLabel}>Deneyim</Text></View>
+              <View style={styles.healthStat}><Text style={styles.healthStatNumber}>{vet.answers}</Text><Text style={styles.healthStatLabel}>PetMed yanıtı</Text></View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Hakkında</Text>
+            <Text style={styles.profileBodyText}>{vet.about}</Text>
+
+            <Text style={styles.sectionTitle}>Uzmanlıklar</Text>
+            <View style={styles.chips}>
+              {vet.specialties.map((s) => <View key={s} style={styles.chip}><Text style={styles.chipText}>{s}</Text></View>)}
+            </View>
+
+            <Text style={styles.sectionTitle}>Muayene bilgisi</Text>
+            <View style={styles.emptyInfoBox}>
+              <Text style={styles.infoCardTitle}>{vet.hours}</Text>
+              <Text style={styles.smallGray}>Tahmini muayene ücreti: {vet.fee} TL</Text>
+            </View>
+
+            <Text style={styles.sectionTitle}>Kullanıcı yorumları</Text>
+            {vet.comments.map((comment, i) => (
+              <View key={i} style={styles.reviewCard}>
+                <Text style={styles.rating}>★★★★★</Text>
+                <Text style={styles.profileBodyText}>{comment}</Text>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.primaryButton} onPress={message}>
+              <Text style={styles.primaryButtonText}>Veterinere Mesaj Gönder</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.outlineButton} onPress={close}>
+              <Text style={styles.outlineButtonText}>Kapat</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 function PostModal({ visible, close, text, setText, publish }) {
   return (
@@ -3702,5 +3816,18 @@ const styles = StyleSheet.create({
   placeCard: { backgroundColor: '#FFF', borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#EEE' },
   placeIconBox: { width: 55, height: 55, borderRadius: 16, backgroundColor: '#F7F6FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   placeOpen: { color: '#25844A', fontSize: 9, fontWeight: '900', marginTop: 3 },
+
+
+  formModalCard: { width: '92%', maxHeight: '88%', backgroundColor: '#FFF', borderRadius: 24, padding: 20 },
+  formLabel: { fontSize: 11, fontWeight: '800', color: '#555', marginBottom: 8 },
+  activeFormChip: { backgroundColor: '#5B3DF5', borderColor: '#5B3DF5' },
+  activeFormChipText: { color: '#FFF' },
+  smallDeleteButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, backgroundColor: '#FFF0F0', marginLeft: 8 },
+  smallDeleteText: { color: '#D33', fontSize: 10, fontWeight: '900' },
+  emptyInfoBox: { backgroundColor: '#F7F6FF', borderRadius: 16, padding: 14, marginBottom: 14 },
+  notificationInfo: { backgroundColor: '#F7F6FF', borderRadius: 16, padding: 14, marginVertical: 14 },
+  vetProfileStats: { flexDirection: 'row', marginHorizontal: -4, marginTop: 18, marginBottom: 12 },
+  profileBodyText: { color: '#555', fontSize: 12, lineHeight: 19, marginBottom: 12 },
+  reviewCard: { backgroundColor: '#F8F8FA', borderRadius: 15, padding: 13, marginBottom: 8 },
 
 });
