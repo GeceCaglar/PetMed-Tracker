@@ -381,6 +381,7 @@ export default function App() {
   const [chatModal, setChatModal] = useState(false);
   const [chatUser, setChatUser] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [messageAttachment, setMessageAttachment] = useState(null);
   const [messages, setMessages] = useState({});
 
   // PetMed günlük kullanım özellikleri
@@ -484,18 +485,65 @@ export default function App() {
   };
 
   const sendMessage = () => {
-    if (!messageText.trim() || !chatUser) return;
+    if ((!messageText.trim() && !messageAttachment) || !chatUser) return;
     const key = String(chatUser.id || chatUser.name);
     const newMessage = {
       id: Date.now().toString(),
       text: messageText.trim(),
       sender: 'me',
+      attachment: messageAttachment,
     };
     setMessages((old) => ({
       ...old,
       [key]: [...(old[key] || []), newMessage],
     }));
     setMessageText('');
+    setMessageAttachment(null);
+  };
+
+  const pickChatMedia = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('İzin gerekli', 'Fotoğraf veya video göndermek için galeri izni vermelisin.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        const isVideo = asset.type === 'video' || /\.(mp4|mov|m4v|webm)$/i.test(asset.uri || '');
+        setMessageAttachment({
+          type: isVideo ? 'video' : 'image',
+          uri: asset.uri,
+          name: asset.fileName || (isVideo ? 'Video' : 'Fotoğraf'),
+        });
+      }
+    } catch (e) {
+      Alert.alert('Medya seçilemedi', 'Fotoğraf veya video seçilirken bir sorun oluştu.');
+    }
+  };
+
+  const attachDemoFile = () => {
+    setMessageAttachment({
+      type: 'file',
+      name: 'PetMed_Belge.pdf',
+      uri: null,
+    });
+  };
+
+  const attachDemoVoice = () => {
+    setMessageAttachment({
+      type: 'audio',
+      name: 'Sesli mesaj',
+      duration: '00:12',
+      uri: null,
+    });
   };
 
   const activateProDemo = () => {
@@ -1049,6 +1097,11 @@ export default function App() {
           text={messageText}
           setText={setMessageText}
           send={sendMessage}
+          attachment={messageAttachment}
+          setAttachment={setMessageAttachment}
+          pickMedia={pickChatMedia}
+          attachFile={attachDemoFile}
+          attachVoice={attachDemoVoice}
         />
       </SafeAreaView>
     );
@@ -1145,6 +1198,11 @@ export default function App() {
           text={messageText}
           setText={setMessageText}
           send={sendMessage}
+          attachment={messageAttachment}
+          setAttachment={setMessageAttachment}
+          pickMedia={pickChatMedia}
+          attachFile={attachDemoFile}
+          attachVoice={attachDemoVoice}
         />
       </SafeAreaView>
     );
@@ -2065,48 +2123,148 @@ function ProModal({ visible, close, activate }) {
   );
 }
 
-function ChatModal({ visible, close, person, messages, text, setText, send }) {
+function ChatModal({
+  visible,
+  close,
+  person,
+  messages,
+  text,
+  setText,
+  send,
+  attachment,
+  setAttachment,
+  pickMedia,
+  attachFile,
+  attachVoice,
+}) {
   if (!person) return null;
   const key = String(person.id || person.name);
-  const thread = messages[key] || [];
-  const isVet = Boolean(person.clinic);
+  const list = messages[key] || [];
+
+  const renderAttachment = (item) => {
+    const a = item.attachment;
+    if (!a) return null;
+
+    if (a.type === 'image' && a.uri) {
+      return <Image source={{ uri: a.uri }} style={styles.chatMediaImage} />;
+    }
+
+    if (a.type === 'video') {
+      return (
+        <View style={styles.chatAttachmentCard}>
+          <Text style={styles.chatAttachmentIcon}>▶</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.chatAttachmentTitle}>Video</Text>
+            <Text style={styles.chatAttachmentSub}>{a.name || 'Gönderilen video'}</Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (a.type === 'audio') {
+      return (
+        <View style={styles.chatAttachmentCard}>
+          <Text style={styles.chatAttachmentIcon}>◉</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.chatAttachmentTitle}>Sesli mesaj</Text>
+            <Text style={styles.chatAttachmentSub}>{a.duration || 'Ses kaydı'}</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.chatAttachmentCard}>
+        <Text style={styles.chatAttachmentIcon}>▤</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.chatAttachmentTitle}>Dosya</Text>
+          <Text style={styles.chatAttachmentSub}>{a.name || 'Ekli dosya'}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
       <SafeAreaView style={styles.container}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={close}><Text style={styles.back}>‹</Text></TouchableOpacity>
-          <View style={{ alignItems: 'center' }}>
+          <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.modalTitle}>{person.name}</Text>
-            <Text style={styles.chatStatus}>{isVet ? 'Doğrulanmış Veteriner Hekim' : 'PetMed kullanıcısı'}</Text>
+            <Text style={styles.smallGray}>PetMed Mesajlar</Text>
           </View>
-          <View style={{ width: 30 }} />
         </View>
-        {isVet && (
-          <View style={styles.medicalWarning}>
-            <Text style={styles.medicalWarningText}>Veterinerle çevrim içi yazışma fiziksel muayenenin yerini tutmaz. Acil durumlarda en yakın veteriner kliniğine başvur.</Text>
+
+        <ScrollView contentContainerStyle={styles.chatMessagesContent}>
+          <View style={styles.chatInfoBox}>
+            <Text style={styles.chatInfoTitle}>Güvenli mesajlaşma</Text>
+            <Text style={styles.smallGray}>
+              Metin, fotoğraf ve video gönderebilirsin. Ses kaydı ve dosya kartları bu web prototipinde arayüz olarak hazırdır; gerçek yükleme/depolama için backend bağlantısı gerekir.
+            </Text>
           </View>
-        )}
-        <ScrollView style={styles.chatArea} contentContainerStyle={{ paddingBottom: 20 }}>
-          {thread.length === 0 && <Text style={styles.chatEmpty}>Henüz mesaj yok. İlk sorunu veya mesajını yazabilirsin.</Text>}
-          {thread.map((m) => (
-            <View key={m.id} style={styles.myMessage}><Text style={styles.myMessageText}>{m.text}</Text></View>
+
+          {list.length === 0 && (
+            <View style={styles.emptyInfoBox}>
+              <Text style={styles.infoCardTitle}>Henüz mesaj yok</Text>
+              <Text style={styles.smallGray}>İlk mesajını veya bir fotoğrafı gönder.</Text>
+            </View>
+          )}
+
+          {list.map((item) => (
+            <View key={item.id} style={styles.myChatBubble}>
+              {renderAttachment(item)}
+              {!!item.text && <Text style={styles.myChatText}>{item.text}</Text>}
+            </View>
           ))}
         </ScrollView>
-        <View style={styles.messageBar}>
-          <TouchableOpacity onPress={() => Alert.alert('Fotoğraf', 'Fotoğraf gönderme özelliğini sonraki aşamada gerçek depolama sistemiyle bağlayacağız.')}>
-            <Text style={styles.attachmentButton}>+</Text>
+
+        {attachment && (
+          <View style={styles.pendingAttachment}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pendingAttachmentTitle}>
+                {attachment.type === 'image' ? 'Fotoğraf eklendi' :
+                 attachment.type === 'video' ? 'Video eklendi' :
+                 attachment.type === 'audio' ? 'Sesli mesaj eklendi' : 'Dosya eklendi'}
+              </Text>
+              <Text style={styles.smallGray}>{attachment.name || attachment.duration || ''}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setAttachment(null)} style={styles.removeAttachmentButton}>
+              <Text style={styles.removeAttachmentText}>Kaldır</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.chatTools}>
+          <TouchableOpacity style={styles.chatToolButton} onPress={pickMedia}>
+            <Text style={styles.chatToolIcon}>▧</Text>
+            <Text style={styles.chatToolText}>Foto/Video</Text>
           </TouchableOpacity>
-          <TextInput style={styles.messageInput} placeholder={isVet ? 'Veterinere sorun...' : 'Mesaj yaz...'} value={text} onChangeText={setText} multiline />
-          <TouchableOpacity style={styles.sendButton} onPress={send}><Text style={styles.sendButtonText}>Gönder</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.chatToolButton} onPress={attachVoice}>
+            <Text style={styles.chatToolIcon}>◉</Text>
+            <Text style={styles.chatToolText}>Ses</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.chatToolButton} onPress={attachFile}>
+            <Text style={styles.chatToolIcon}>▤</Text>
+            <Text style={styles.chatToolText}>Dosya</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.chatComposer}>
+          <TextInput
+            style={styles.chatInput}
+            placeholder="Mesaj yaz..."
+            value={text}
+            onChangeText={setText}
+            multiline
+          />
+          <TouchableOpacity style={styles.chatSendButton} onPress={send}>
+            <Text style={styles.chatSendText}>Gönder</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </Modal>
   );
 }
-
-/* =========================================================
-   GEZDİRİCİ PROFİLİ
-========================================================= */
 
 function WalkerModal({ visible, walker, close, book }) {
   if (!walker) return null;
@@ -3830,5 +3988,29 @@ const styles = StyleSheet.create({
   vetProfileStats: { flexDirection: 'row', marginHorizontal: -4, marginTop: 18, marginBottom: 12 },
   profileBodyText: { color: '#555', fontSize: 12, lineHeight: 19, marginBottom: 12 },
   reviewCard: { backgroundColor: '#F8F8FA', borderRadius: 15, padding: 13, marginBottom: 8 },
+
+
+  chatMessagesContent: { padding: 16, paddingBottom: 24 },
+  chatInfoBox: { backgroundColor: '#F7F6FF', borderRadius: 16, padding: 13, marginBottom: 14 },
+  chatInfoTitle: { color: '#5B3DF5', fontWeight: '900', fontSize: 11, marginBottom: 4 },
+  myChatBubble: { alignSelf: 'flex-end', maxWidth: '82%', backgroundColor: '#5B3DF5', borderRadius: 18, borderBottomRightRadius: 5, padding: 10, marginBottom: 9 },
+  myChatText: { color: '#FFF', fontSize: 12, lineHeight: 18 },
+  chatMediaImage: { width: 210, height: 180, borderRadius: 13, marginBottom: 8 },
+  chatAttachmentCard: { flexDirection: 'row', alignItems: 'center', minWidth: 210, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 13, padding: 10, marginBottom: 7 },
+  chatAttachmentIcon: { color: '#FFF', fontSize: 22, marginRight: 10 },
+  chatAttachmentTitle: { color: '#FFF', fontSize: 11, fontWeight: '900' },
+  chatAttachmentSub: { color: '#EEE', fontSize: 9, marginTop: 2 },
+  pendingAttachment: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F6FF', marginHorizontal: 12, marginBottom: 7, padding: 10, borderRadius: 14 },
+  pendingAttachmentTitle: { fontSize: 11, fontWeight: '900', color: '#333' },
+  removeAttachmentButton: { backgroundColor: '#FFF0F0', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 6 },
+  removeAttachmentText: { color: '#C33', fontSize: 9, fontWeight: '900' },
+  chatTools: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#EEE', backgroundColor: '#FFF' },
+  chatToolButton: { flex: 1, alignItems: 'center', paddingVertical: 7 },
+  chatToolIcon: { color: '#5B3DF5', fontSize: 19, fontWeight: '900' },
+  chatToolText: { color: '#555', fontSize: 9, fontWeight: '800', marginTop: 3 },
+  chatComposer: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, borderTopWidth: 1, borderTopColor: '#EEE', backgroundColor: '#FFF' },
+  chatInput: { flex: 1, minHeight: 42, maxHeight: 100, backgroundColor: '#F4F4F6', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 12 },
+  chatSendButton: { backgroundColor: '#5B3DF5', borderRadius: 18, paddingHorizontal: 15, paddingVertical: 12, marginLeft: 8 },
+  chatSendText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
 
 });
