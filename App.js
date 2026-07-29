@@ -1899,10 +1899,7 @@ export default function App() {
   /* =====================================================
      KEŞFET
   ===================================================== */
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authMode, setAuthMode] = useState('login');
-  const [authSubmitting, setAuthSubmitting] = useState(false);
+
 
   const handleAuth = async () => {
     const email = authEmail.trim();
