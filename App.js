@@ -339,6 +339,9 @@ const SERVICES = [
 ========================================================= */
 
 export default function App() {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState('discover');
   const [serviceScreen, setServiceScreen] = useState(null);
 
