@@ -1893,7 +1893,277 @@ export default function App() {
   /* =====================================================
      KEŞFET
   ===================================================== */
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authMode, setAuthMode] = useState('login');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
+  const handleAuth = async () => {
+    const email = authEmail.trim();
+    const password = authPassword.trim();
+
+    if (!email || !password) {
+      Alert.alert('Eksik bilgi', 'E-posta ve şifre alanlarını doldur.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Şifre çok kısa', 'Şifren en az 6 karakter olmalı.');
+      return;
+    }
+
+    try {
+      setAuthSubmitting(true);
+
+      if (authMode === 'register') {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) {
+          Alert.alert('Kayıt oluşturulamadı', error.message);
+          return;
+        }
+
+        if (!data.session) {
+          Alert.alert(
+            'Kayıt oluşturuldu',
+            'E-posta adresine gönderilen doğrulama bağlantısına tıkla. Ardından PetMed’e giriş yapabilirsin.'
+          );
+          setAuthMode('login');
+          setAuthPassword('');
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          Alert.alert('Giriş yapılamadı', error.message);
+        }
+      }
+    } catch (error) {
+      Alert.alert(
+        'Bir hata oluştu',
+        error?.message || 'Lütfen tekrar dene.'
+      );
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: '#F7F5FC',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 34,
+            fontWeight: '900',
+            color: '#7000FF',
+          }}
+        >
+          PetMed
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 10,
+            color: '#777',
+            fontSize: 14,
+          }}
+        >
+          Yükleniyor...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: '#F7F5FC',
+          justifyContent: 'center',
+          paddingHorizontal: 24,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 28,
+            padding: 26,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 38,
+              fontWeight: '900',
+              color: '#7000FF',
+              textAlign: 'center',
+            }}
+          >
+            PetMed
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '800',
+              textAlign: 'center',
+              marginTop: 10,
+              color: '#171717',
+            }}
+          >
+            {authMode === 'login'
+              ? 'Tekrar hoş geldin'
+              : 'PetMed’e katıl'}
+          </Text>
+
+          <Text
+            style={{
+              textAlign: 'center',
+              color: '#777',
+              marginTop: 7,
+              marginBottom: 24,
+              lineHeight: 20,
+            }}
+          >
+            {authMode === 'login'
+              ? 'Evcil dostunun dünyasına devam et.'
+              : 'Evcil dostun için PetMed hesabını oluştur.'}
+          </Text>
+
+          <Text
+            style={{
+              fontWeight: '700',
+              marginBottom: 7,
+              color: '#333',
+            }}
+          >
+            E-posta
+          </Text>
+
+          <TextInput
+            value={authEmail}
+            onChangeText={setAuthEmail}
+            placeholder="ornek@email.com"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            style={{
+              borderWidth: 1,
+              borderColor: '#E5E0EE',
+              backgroundColor: '#FAF9FC',
+              borderRadius: 15,
+              paddingHorizontal: 15,
+              paddingVertical: 14,
+              fontSize: 16,
+              marginBottom: 17,
+            }}
+          />
+
+          <Text
+            style={{
+              fontWeight: '700',
+              marginBottom: 7,
+              color: '#333',
+            }}
+          >
+            Şifre
+          </Text>
+
+          <TextInput
+            value={authPassword}
+            onChangeText={setAuthPassword}
+            placeholder="En az 6 karakter"
+            secureTextEntry
+            autoCapitalize="none"
+            onSubmitEditing={handleAuth}
+            style={{
+              borderWidth: 1,
+              borderColor: '#E5E0EE',
+              backgroundColor: '#FAF9FC',
+              borderRadius: 15,
+              paddingHorizontal: 15,
+              paddingVertical: 14,
+              fontSize: 16,
+              marginBottom: 20,
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={handleAuth}
+            disabled={authSubmitting}
+            style={{
+              backgroundColor: authSubmitting ? '#A66AFF' : '#7000FF',
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontWeight: '900',
+                fontSize: 16,
+              }}
+            >
+              {authSubmitting
+                ? 'Lütfen bekle...'
+                : authMode === 'login'
+                ? 'Giriş Yap'
+                : 'Hesap Oluştur'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setAuthMode(
+                authMode === 'login' ? 'register' : 'login'
+              );
+              setAuthPassword('');
+            }}
+            style={{
+              paddingVertical: 18,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: '#7000FF',
+                fontWeight: '800',
+              }}
+            >
+              {authMode === 'login'
+                ? 'Hesabın yok mu? Kayıt Ol'
+                : 'Zaten hesabın var mı? Giriş Yap'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text
+            style={{
+              textAlign: 'center',
+              color: '#999',
+              fontSize: 12,
+              lineHeight: 17,
+            }}
+          >
+            Devam ederek PetMed hesabını kullanmayı kabul etmiş olursun.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mainHeader}>
