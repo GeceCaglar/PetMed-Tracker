@@ -341,8 +341,14 @@ const SERVICES = [
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-    useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authMode, setAuthMode] = useState('login');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
+  useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
     });
